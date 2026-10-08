@@ -1,0 +1,74 @@
+# Entorno local de infraestructura para TINT: PostgreSQL, Redis y MinIO.
+# Uso: cp .env.example .env && docker compose up -d
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: tint-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-tint}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-tint}
+      POSTGRES_DB: ${POSTGRES_DB:-tint}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tint} -d ${POSTGRES_DB:-tint}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: tint-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    container_name: tint-minio
+    command: ["server", "/data", "--console-address", ":9001"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-tintadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-tintadmin123}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # Crea el bucket de media al arrancar y termina.
+  minio-init:
+    image: minio/mc:latest
+    container_name: tint-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $${MINIO_ROOT_USER} $${MINIO_ROOT_PASSWORD} &&
+      mc mb --ignore-existing local/$${MINIO_BUCKET}
+      "
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-tintadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-tintadmin123}
+      MINIO_BUCKET: ${MINIO_BUCKET:-tint-media}
+
+volumes:
+  postgres-data:
+  redis-data:
+  minio-data:
