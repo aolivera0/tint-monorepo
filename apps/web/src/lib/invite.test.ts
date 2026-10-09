@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { toAbsoluteInviteLink, inviteClaimErrorMessage } from './invite';
+import { toAbsoluteInviteLink, inviteClaimErrorMessage, parseInviteCode } from './invite';
 import { ApiError } from './api';
 
 describe('toAbsoluteInviteLink', () => {
@@ -42,5 +42,26 @@ describe('inviteClaimErrorMessage', () => {
 
   it('mensaje por defecto si el fallo no es un Error', () => {
     expect(inviteClaimErrorMessage('cadena')).toBe('No se pudo unir a la sala');
+  });
+});
+
+describe('parseInviteCode', () => {
+  it('extrae el código de una URL absoluta', () => {
+    expect(parseInviteCode('http://localhost:5173/invite/abc123XYZ')).toBe('abc123XYZ');
+  });
+
+  it('extrae el código de una ruta relativa', () => {
+    expect(parseInviteCode('/invite/abc123XYZ')).toBe('abc123XYZ');
+  });
+
+  it('acepta el código pelado', () => {
+    expect(parseInviteCode('abc123XYZ')).toBe('abc123XYZ');
+  });
+
+  it('retorna null si está vacío o no trae /invite/', () => {
+    expect(parseInviteCode('')).toBeNull();
+    expect(parseInviteCode('   ')).toBeNull();
+    expect(parseInviteCode('http://localhost:5173/dashboard')).toBeNull();
+    expect(parseInviteCode('x')).toBeNull();
   });
 });

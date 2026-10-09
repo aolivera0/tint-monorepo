@@ -125,7 +125,14 @@ export default function CreateRoom() {
     <AppShell>
       <div className="grid gap-8 pt-10 lg:grid-cols-[1fr_380px]">
         <section>
-          <h1 className="text-3xl font-bold tracking-tighter text-white md:text-4xl">{heading}</h1>
+          <Link
+            to="/dashboard"
+            aria-label="Volver al dashboard"
+            className="inline-flex items-center gap-1 text-sm text-tint-muted transition hover:text-white"
+          >
+            ← Volver
+          </Link>
+          <h1 className="mt-3 text-3xl font-bold tracking-tighter text-white md:text-4xl">{heading}</h1>
           <p className="mt-2 max-w-[65ch] text-sm leading-relaxed">{intro}</p>
 
           {pageLoading && <p className="mt-6 text-sm">Cargando la sala…</p>}

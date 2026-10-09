@@ -152,4 +152,20 @@ describe('CreateRoom', () => {
     renderManage();
     await waitFor(() => expect(screen.getByText(/eliminada/i)).toBeInTheDocument());
   });
+
+  it('modo crear: tiene enlace para volver al dashboard', async () => {
+    render(
+      <MemoryRouter>
+        <CreateRoom />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('link', { name: /volver/i })).toHaveAttribute('href', '/dashboard');
+  });
+
+  it('modo gestionar: tiene enlace para volver al dashboard', async () => {
+    mockManageLoad();
+    renderManage();
+    await screen.findByDisplayValue('Cine');
+    expect(screen.getByRole('link', { name: /volver/i })).toHaveAttribute('href', '/dashboard');
+  });
 });

@@ -3,13 +3,26 @@ import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import { useNavigate, Link } from 'react-router-dom';
 import { apiFetch } from '../lib/api';
+import { parseInviteCode } from '../lib/invite';
 import { Button } from '../components/ui/Button';
-import { ErrorAlert } from '../components/ui/Primitives';
+import { Field, ErrorAlert } from '../components/ui/Primitives';
 
 export default function Login() {
   const navigate = useNavigate();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [invite, setInvite] = useState('');
+  const [inviteHint, setInviteHint] = useState('');
+  const handleInvite = (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = parseInviteCode(invite);
+    if (!code) {
+      setInviteHint('Ese link no parece válido. Revisa que incluya /invite/ o el código.');
+      return;
+    }
+    setInviteHint('');
+    navigate(`/invite/${code}`);
+  };
   const handleLogin = async () => {
     setError('');
     setLoading(true);
@@ -83,9 +96,24 @@ export default function Login() {
           )}
 
           <p className="mt-6 border-t border-white/10 pt-4 text-[13px]">
-            ¿Tienes un link de invitación?{' '}
-            <span className="text-tint-accent">Pide el código a tu host, no necesitas cuenta.</span>
+            ¿Tienes un link de invitación? Pega el link o el código, no necesitas cuenta.
           </p>
+          <form onSubmit={handleInvite} className="mt-3 space-y-3">
+            <Field label="Link de invitación" htmlFor="invite-link" error={undefined}>
+              <input
+                id="invite-link"
+                className="w-full rounded-xl border border-white/10 bg-tint-bg px-4 py-2.5 text-white placeholder:text-tint-muted/50 focus:border-tint-accent focus:outline-none"
+                value={invite}
+                onChange={(e) => setInvite(e.target.value)}
+                placeholder="Pega el link o el código"
+                autoComplete="off"
+              />
+            </Field>
+            {inviteHint && <p className="text-[13px] text-red-300">{inviteHint}</p>}
+            <Button type="submit" variant="ghost" disabled={invite.trim().length === 0} className="w-full">
+              Continuar sin cuenta
+            </Button>
+          </form>
           <Link to="/dashboard" className="sr-only">
             dashboard
           </Link>

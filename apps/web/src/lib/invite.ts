@@ -25,3 +25,16 @@ export function inviteClaimErrorMessage(err: unknown): string {
   }
   return err instanceof Error ? err.message : 'No se pudo unir a la sala';
 }
+
+/**
+ * Extrae el código de invitación de un link absoluto, una ruta
+ * relativa o el código pelado. Retorna null si no es válido.
+ */
+export function parseInviteCode(input: string): string | null {
+  const value = input.trim();
+  if (!value) return null;
+  const fromPath = value.match(/\/invite\/([A-Za-z0-9_-]+)/);
+  if (fromPath) return fromPath[1];
+  if (/^[A-Za-z0-9_-]{6,32}$/.test(value)) return value;
+  return null;
+}

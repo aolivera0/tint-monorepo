@@ -31,6 +31,7 @@ function renderLogin() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/dashboard" element={<p>Dashboard OK</p>} />
+        <Route path="/invite/:code" element={<p>Invitación OK</p>} />
       </Routes>
     </MemoryRouter>,
   );
@@ -68,5 +69,28 @@ describe('Login', () => {
     await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
     expect(screen.getByText(/Invalid token/)).toBeInTheDocument();
     expect(localStorage.getItem('tint_token')).toBeNull();
+  });
+
+  it('entra con link de invitación absoluto sin pedir cuenta', async () => {
+    renderLogin();
+    await userEvent.type(screen.getByPlaceholderText(/link o el código/i), 'http://localhost:5173/invite/abc123XYZ');
+    await userEvent.click(screen.getByText('Continuar sin cuenta'));
+    await waitFor(() => expect(screen.getByText('Invitación OK')).toBeInTheDocument());
+    expect(localStorage.getItem('tint_token')).toBeNull();
+  });
+
+  it('entra con el código pelado', async () => {
+    renderLogin();
+    await userEvent.type(screen.getByPlaceholderText(/link o el código/i), 'abc123XYZ');
+    await userEvent.click(screen.getByText('Continuar sin cuenta'));
+    await waitFor(() => expect(screen.getByText('Invitación OK')).toBeInTheDocument());
+  });
+
+  it('no navega y avisa si el link no es válido', async () => {
+    renderLogin();
+    await userEvent.type(screen.getByPlaceholderText(/link o el código/i), 'hola');
+    await userEvent.click(screen.getByText('Continuar sin cuenta'));
+    await waitFor(() => expect(screen.getByText(/no parece válido/i)).toBeInTheDocument());
+    expect(screen.queryByText('Invitación OK')).not.toBeInTheDocument();
   });
 });
