@@ -74,7 +74,7 @@ router.get('/rooms/:id/invitations', requireAuthHost, requireRoomOwner, async (r
     return res.status(410).json({ error: 'Deleted' });
   }
   const invitations = await listByRoom(room.id);
-  res.json({ invitations });
+  res.json({ invitations: invitations.map((invitation) => ({ ...invitation, link: `/invite/${invitation.code}` })) });
 });
 
 const updateRoomSchema = z.object({

@@ -196,7 +196,7 @@ describe('rutas v1', () => {
     expect(res.status).toBe(410);
   });
 
-  it('GET /rooms/:id/invitations lista los links vigentes', async () => {
+  it('GET /rooms/:id/invitations lista los links vigentes con link usable', async () => {
     vi.mocked(isOwner).mockResolvedValueOnce(true);
     vi.mocked(findById).mockResolvedValueOnce(room as any);
     vi.mocked(listByRoom).mockResolvedValueOnce([invitation] as any);
@@ -204,6 +204,7 @@ describe('rutas v1', () => {
     expect(res.status).toBe(200);
     expect(res.body.invitations).toHaveLength(1);
     expect(res.body.invitations[0].code).toBe('abc123def456');
+    expect(res.body.invitations[0].link).toBe('/invite/abc123def456');
   });
 
   it('PATCH /rooms/:id 400 si el título está vacío', async () => {
