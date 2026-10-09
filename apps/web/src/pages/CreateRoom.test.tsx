@@ -153,19 +153,30 @@ describe('CreateRoom', () => {
     await waitFor(() => expect(screen.getByText(/eliminada/i)).toBeInTheDocument());
   });
 
-  it('modo crear: tiene enlace para volver al dashboard', async () => {
+  it('modo crear: tiene enlace Volver al dashboard', async () => {
     render(
       <MemoryRouter>
         <CreateRoom />
       </MemoryRouter>,
     );
-    expect(screen.getByRole('link', { name: /volver/i })).toHaveAttribute('href', '/dashboard');
+    expect(screen.getByRole('link', { name: 'Volver' })).toHaveAttribute('href', '/dashboard');
   });
 
-  it('modo gestionar: tiene enlace para volver al dashboard', async () => {
+  it('modo gestionar: tiene enlace Volver al dashboard', async () => {
     mockManageLoad();
     renderManage();
     await screen.findByDisplayValue('Cine');
-    expect(screen.getByRole('link', { name: /volver/i })).toHaveAttribute('href', '/dashboard');
+    const backLinks = screen.getAllByRole('link', { name: 'Volver' });
+    expect(backLinks).toHaveLength(1);
+    expect(backLinks[0]).toHaveAttribute('href', '/dashboard');
+  });
+
+  it('sala eliminada: usa el mismo enlace Volver sin duplicados', async () => {
+    mockedApi.mockRejectedValueOnce(new ApiError(410, 'Deleted'));
+    renderManage();
+    await waitFor(() => expect(screen.getByText(/eliminada/i)).toBeInTheDocument());
+    const backLinks = screen.getAllByRole('link', { name: 'Volver' });
+    expect(backLinks).toHaveLength(1);
+    expect(backLinks[0]).toHaveAttribute('href', '/dashboard');
   });
 });

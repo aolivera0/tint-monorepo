@@ -29,4 +29,11 @@ describe('WatchRoom', () => {
     renderWatch();
     expect(screen.getByText(/participante \(invitado\)/)).toBeInTheDocument();
   });
+
+  it('tiene un único enlace Volver al dashboard', () => {
+    renderWatch();
+    const backLinks = screen.getAllByRole('link', { name: 'Volver' });
+    expect(backLinks).toHaveLength(1);
+    expect(backLinks[0]).toHaveAttribute('href', '/dashboard');
+  });
 });

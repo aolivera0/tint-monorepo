@@ -4,6 +4,7 @@ import { toAbsoluteInviteLink } from '../lib/invite';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { AppShell } from '../components/layout/AppShell';
 import { Button } from '../components/ui/Button';
+import { BackLink } from '../components/ui/BackLink';
 import { Field, ErrorAlert, Card } from '../components/ui/Primitives';
 
 type Invitation = { code: string; link: string; expiresAt: string };
@@ -125,13 +126,7 @@ export default function CreateRoom() {
     <AppShell>
       <div className="grid gap-8 pt-10 lg:grid-cols-[1fr_380px]">
         <section>
-          <Link
-            to="/dashboard"
-            aria-label="Volver al dashboard"
-            className="inline-flex items-center gap-1 text-sm text-tint-muted transition hover:text-white"
-          >
-            ← Volver
-          </Link>
+          <BackLink />
           <h1 className="mt-3 text-3xl font-bold tracking-tighter text-white md:text-4xl">{heading}</h1>
           <p className="mt-2 max-w-[65ch] text-sm leading-relaxed">{intro}</p>
 
@@ -140,12 +135,6 @@ export default function CreateRoom() {
           {gone && !pageLoading && (
             <div className="mt-6 max-w-xl">
               <ErrorAlert message="Esta sala fue eliminada. Sus links ya no funcionan." />
-              <Link
-                to="/dashboard"
-                className="mt-4 inline-flex items-center justify-center whitespace-nowrap rounded-full bg-tint-accent px-5 py-2.5 text-sm font-semibold text-tint-bg"
-              >
-                Volver al dashboard
-              </Link>
             </div>
           )}
 

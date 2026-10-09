@@ -1,6 +1,7 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import { useState } from 'react';
 import { ReactionBar } from '../components/ReactionBar';
+import { BackLink } from '../components/ui/BackLink';
 import { Card } from '../components/ui/Primitives';
 
 export default function WatchRoom() {
@@ -26,13 +27,7 @@ export default function WatchRoom() {
       <header className="sticky top-0 z-30 border-b border-white/10 bg-tint-bg/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between gap-4 px-4">
           <div className="flex min-w-0 items-center gap-3">
-            <Link
-              to="/dashboard"
-              aria-label="Volver a salas"
-              className="rounded-full border border-white/15 px-3 py-1.5 text-[13px] text-white transition hover:bg-white/10"
-            >
-              Atrás
-            </Link>
+            <BackLink />
             <h1 className="truncate text-[15px] font-semibold tracking-tight text-white">
               Sala {roomId}
             </h1>
