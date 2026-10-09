@@ -13,19 +13,23 @@ vi.mock('../src/modules/rooms/rooms.repo.js', () => ({
   listByHost: vi.fn(),
   findById: vi.fn(),
   isOwner: vi.fn(),
+  softRemoveById: vi.fn(),
+  updateTitle: vi.fn(),
 }));
 
 vi.mock('../src/modules/invitations/invitations.repo.js', () => ({
   create: vi.fn(),
   findByCode: vi.fn(),
   setRevoked: vi.fn(),
+  listByRoom: vi.fn(),
 }));
 
 import app from '../src/app.js';
-import { create as createRoom, listByHost, findById, isOwner } from '../src/modules/rooms/rooms.repo.js';
-import { create as createInvitation, findByCode, setRevoked } from '../src/modules/invitations/invitations.repo.js';
+import { create as createRoom, listByHost, findById, isOwner, softRemoveById, updateTitle } from '../src/modules/rooms/rooms.repo.js';
+import { create as createInvitation, findByCode, setRevoked, listByRoom } from '../src/modules/invitations/invitations.repo.js';
 
-const room = { id: 'room-1', hostId: 'host-1', title: 'Noche de cine' };
+const room = { id: 'room-1', hostId: 'host-1', title: 'Noche de cine', status: 'active' };
+const deletedRoom = { ...room, status: 'deleted' };
 const invitation = {
   id: 'inv-1',
   code: 'abc123def456',
@@ -84,6 +88,7 @@ describe('rutas v1', () => {
 
   it('POST /rooms/:id/invitations genera invitación si es dueño', async () => {
     vi.mocked(isOwner).mockResolvedValueOnce(true);
+    vi.mocked(findById).mockResolvedValueOnce(room as any);
     vi.mocked(createInvitation).mockResolvedValueOnce(invitation as any);
     const res = await request(app).post('/api/v1/rooms/room-1/invitations').send({ ttlHours: 6 });
     expect(res.status).toBe(200);
@@ -148,5 +153,138 @@ describe('rutas v1', () => {
     expect(first.body.roomId).toBe('room-1');
     expect(first.body.nick).toBe('Ana');
     expect(typeof first.body.token).toBe('string');
+  });
+
+  it('GET /rooms/:id 403 si no es dueño', async () => {
+    vi.mocked(isOwner).mockResolvedValueOnce(false);
+    const res = await request(app).get('/api/v1/rooms/room-1');
+    expect(res.status).toBe(403);
+  });
+
+  it('GET /rooms/:id 404 si no existe', async () => {
+    vi.mocked(isOwner).mockResolvedValueOnce(true);
+    vi.mocked(findById).mockResolvedValueOnce(null as any);
+    const res = await request(app).get('/api/v1/rooms/room-1');
+    expect(res.status).toBe(404);
+  });
+
+  it('GET /rooms/:id 410 si está eliminada', async () => {
+    vi.mocked(isOwner).mockResolvedValueOnce(true);
+    vi.mocked(findById).mockResolvedValueOnce(deletedRoom as any);
+    const res = await request(app).get('/api/v1/rooms/room-1');
+    expect(res.status).toBe(410);
+  });
+
+  it('GET /rooms/:id retorna la sala si está activa', async () => {
+    vi.mocked(isOwner).mockResolvedValueOnce(true);
+    vi.mocked(findById).mockResolvedValueOnce(room as any);
+    const res = await request(app).get('/api/v1/rooms/room-1');
+    expect(res.status).toBe(200);
+    expect(res.body.room).toMatchObject({ id: 'room-1', title: 'Noche de cine' });
+  });
+
+  it('GET /rooms/:id/invitations 403 si no es dueño', async () => {
+    vi.mocked(isOwner).mockResolvedValueOnce(false);
+    const res = await request(app).get('/api/v1/rooms/room-1/invitations');
+    expect(res.status).toBe(403);
+  });
+
+  it('GET /rooms/:id/invitations 410 si la sala está eliminada', async () => {
+    vi.mocked(isOwner).mockResolvedValueOnce(true);
+    vi.mocked(findById).mockResolvedValueOnce(deletedRoom as any);
+    const res = await request(app).get('/api/v1/rooms/room-1/invitations');
+    expect(res.status).toBe(410);
+  });
+
+  it('GET /rooms/:id/invitations lista los links vigentes', async () => {
+    vi.mocked(isOwner).mockResolvedValueOnce(true);
+    vi.mocked(findById).mockResolvedValueOnce(room as any);
+    vi.mocked(listByRoom).mockResolvedValueOnce([invitation] as any);
+    const res = await request(app).get('/api/v1/rooms/room-1/invitations');
+    expect(res.status).toBe(200);
+    expect(res.body.invitations).toHaveLength(1);
+    expect(res.body.invitations[0].code).toBe('abc123def456');
+  });
+
+  it('PATCH /rooms/:id 400 si el título está vacío', async () => {
+    vi.mocked(isOwner).mockResolvedValueOnce(true);
+    const res = await request(app).patch('/api/v1/rooms/room-1').send({ title: '  ' });
+    expect(res.status).toBe(400);
+  });
+
+  it('PATCH /rooms/:id 403 si no es dueño', async () => {
+    vi.mocked(isOwner).mockResolvedValueOnce(false);
+    const res = await request(app).patch('/api/v1/rooms/room-1').send({ title: 'Nuevo' });
+    expect(res.status).toBe(403);
+  });
+
+  it('PATCH /rooms/:id 404 si no existe', async () => {
+    vi.mocked(isOwner).mockResolvedValueOnce(true);
+    vi.mocked(findById).mockResolvedValueOnce(null as any);
+    const res = await request(app).patch('/api/v1/rooms/room-1').send({ title: 'Nuevo' });
+    expect(res.status).toBe(404);
+  });
+
+  it('PATCH /rooms/:id 410 si está eliminada', async () => {
+    vi.mocked(isOwner).mockResolvedValueOnce(true);
+    vi.mocked(findById).mockResolvedValueOnce(deletedRoom as any);
+    const res = await request(app).patch('/api/v1/rooms/room-1').send({ title: 'Nuevo' });
+    expect(res.status).toBe(410);
+  });
+
+  it('PATCH /rooms/:id renombra si es dueño', async () => {
+    vi.mocked(isOwner).mockResolvedValueOnce(true);
+    vi.mocked(findById).mockResolvedValueOnce(room as any);
+    vi.mocked(updateTitle).mockResolvedValueOnce({ ...room, title: 'Nuevo' } as any);
+    const res = await request(app).patch('/api/v1/rooms/room-1').send({ title: 'Nuevo' });
+    expect(res.status).toBe(200);
+    expect(res.body.room.title).toBe('Nuevo');
+    expect(updateTitle).toHaveBeenCalledWith('room-1', 'Nuevo');
+  });
+
+  it('DELETE /rooms/:id 403 si no es dueño', async () => {
+    vi.mocked(isOwner).mockResolvedValueOnce(false);
+    const res = await request(app).delete('/api/v1/rooms/room-1');
+    expect(res.status).toBe(403);
+  });
+
+  it('DELETE /rooms/:id 404 si no existe', async () => {
+    vi.mocked(isOwner).mockResolvedValueOnce(true);
+    vi.mocked(findById).mockResolvedValueOnce(null as any);
+    const res = await request(app).delete('/api/v1/rooms/room-1');
+    expect(res.status).toBe(404);
+  });
+
+  it('DELETE /rooms/:id 410 si ya está eliminada', async () => {
+    vi.mocked(isOwner).mockResolvedValueOnce(true);
+    vi.mocked(findById).mockResolvedValueOnce(deletedRoom as any);
+    const res = await request(app).delete('/api/v1/rooms/room-1');
+    expect(res.status).toBe(410);
+    expect(softRemoveById).not.toHaveBeenCalled();
+  });
+
+  it('DELETE /rooms/:id hace borrado lógico si es dueño', async () => {
+    vi.mocked(isOwner).mockResolvedValueOnce(true);
+    vi.mocked(findById).mockResolvedValueOnce(room as any);
+    vi.mocked(softRemoveById).mockResolvedValueOnce(deletedRoom as any);
+    const res = await request(app).delete('/api/v1/rooms/room-1');
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(softRemoveById).toHaveBeenCalledWith('room-1');
+  });
+
+  it('POST /rooms/:id/invitations 410 si la sala está eliminada', async () => {
+    vi.mocked(isOwner).mockResolvedValueOnce(true);
+    vi.mocked(findById).mockResolvedValueOnce(deletedRoom as any);
+    const res = await request(app).post('/api/v1/rooms/room-1/invitations').send({});
+    expect(res.status).toBe(410);
+    expect(createInvitation).not.toHaveBeenCalled();
+  });
+
+  it('POST /invitations/claim 410 si la sala está eliminada', async () => {
+    vi.mocked(findByCode).mockResolvedValueOnce({ ...invitation } as any);
+    vi.mocked(findById).mockResolvedValueOnce(deletedRoom as any);
+    const res = await request(app).post('/api/v1/invitations/claim').send({ code: 'abc', nick: 'Ana' });
+    expect(res.status).toBe(410);
   });
 });

@@ -15,6 +15,7 @@ export const rooms = pgTable('rooms', {
   id: uuid('id').primaryKey().defaultRandom(),
   hostId: uuid('host_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   title: varchar('title', { length: 150 }).notNull(),
+  status: varchar('status', { length: 20 }).notNull().default('active'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
 });

@@ -14,9 +14,9 @@ vi.mock('../src/db/client.js', () => ({
   pool: { end: () => Promise.resolve() },
 }));
 
-import { create, findById, listByHost, isOwner } from '../src/modules/rooms/rooms.repo.js';
+import { create, findById, listByHost, isOwner, softRemoveById, updateTitle } from '../src/modules/rooms/rooms.repo.js';
 
-const room = { id: 'r1', hostId: 'h1', title: 'Sala' };
+const room = { id: 'r1', hostId: 'h1', title: 'Sala', status: 'active' };
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -47,5 +47,25 @@ describe('rooms.repo', () => {
     await expect(isOwner('r1', 'otro')).resolves.toBe(false);
     whereMock.mockResolvedValueOnce([]);
     await expect(isOwner('missing', 'h1')).resolves.toBe(false);
+  });
+
+  it('softRemoveById marca deleted y retorna la sala', async () => {
+    returningMock.mockResolvedValueOnce([{ ...room, status: 'deleted' }]);
+    await expect(softRemoveById('r1')).resolves.toMatchObject({ id: 'r1', status: 'deleted' });
+  });
+
+  it('softRemoveById retorna null si no existe', async () => {
+    returningMock.mockResolvedValueOnce([]);
+    await expect(softRemoveById('missing')).resolves.toBeNull();
+  });
+
+  it('updateTitle actualiza y retorna la sala', async () => {
+    returningMock.mockResolvedValueOnce([{ ...room, title: 'Nuevo nombre' }]);
+    await expect(updateTitle('r1', 'Nuevo nombre')).resolves.toMatchObject({ title: 'Nuevo nombre' });
+  });
+
+  it('updateTitle retorna null si no existe', async () => {
+    returningMock.mockResolvedValueOnce([]);
+    await expect(updateTitle('missing', 'X')).resolves.toBeNull();
   });
 });

@@ -21,3 +21,8 @@ export async function setRevoked(id: string, revoked = true) {
   const result = await db.update(invitations).set({ revoked }).where(eq(invitations.id, id)).returning();
   return result[0] || null;
 }
+
+export async function listByRoom(roomId: string) {
+  const result = await db.select().from(invitations).where(eq(invitations.roomId, roomId));
+  return result;
+}

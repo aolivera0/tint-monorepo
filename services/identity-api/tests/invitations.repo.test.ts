@@ -14,7 +14,7 @@ vi.mock('../src/db/client.js', () => ({
   pool: { end: () => Promise.resolve() },
 }));
 
-import { create, findByCode, setRevoked } from '../src/modules/invitations/invitations.repo.js';
+import { create, findByCode, setRevoked, listByRoom } from '../src/modules/invitations/invitations.repo.js';
 
 const invitation = {
   id: 'i1',
@@ -49,5 +49,10 @@ describe('invitations.repo', () => {
     expect(result?.revoked).toBe(true);
     returningMock.mockResolvedValueOnce([]);
     await expect(setRevoked('missing')).resolves.toBeNull();
+  });
+
+  it('listByRoom retorna las invitaciones de la sala', async () => {
+    whereMock.mockResolvedValueOnce([invitation]);
+    await expect(listByRoom('r1')).resolves.toEqual([invitation]);
   });
 });

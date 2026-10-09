@@ -5,11 +5,16 @@ import { validate } from '../middlewares/validate.js';
 import { requireAuthHost } from '../middlewares/auth.js';
 import { requireRoomOwner } from '../middlewares/requireRoomOwner.js';
 import { upsertByProvider } from '../modules/users/users.repo.js';
-import { create as createRoom, listByHost, findById } from '../modules/rooms/rooms.repo.js';
-import { create as createInvitation, findByCode, setRevoked } from '../modules/invitations/invitations.repo.js';
+import { create as createRoom, listByHost, findById, softRemoveById, updateTitle } from '../modules/rooms/rooms.repo.js';
+import { create as createInvitation, findByCode, setRevoked, listByRoom } from '../modules/invitations/invitations.repo.js';
 import { issueGuestToken } from '../modules/auth/auth.service.js';
 
 const router = Router();
+
+function getRoomId(req: { params: unknown }) {
+  const rawId = (req.params as Record<string, unknown>).id;
+  return Array.isArray(rawId) ? rawId[0] : (rawId as string);
+}
 
 router.get('/healthz', (req, res) => {
   res.json({ status: 'ok', service: 'identity-api' });
@@ -49,12 +54,71 @@ router.get('/rooms', requireAuthHost, async (req, res) => {
   res.json({ rooms });
 });
 
+router.get('/rooms/:id', requireAuthHost, requireRoomOwner, async (req, res) => {
+  const room = await findById(getRoomId(req));
+  if (!room) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  if (room.status === 'deleted') {
+    return res.status(410).json({ error: 'Deleted' });
+  }
+  res.json({ room });
+});
+
+router.get('/rooms/:id/invitations', requireAuthHost, requireRoomOwner, async (req, res) => {
+  const room = await findById(getRoomId(req));
+  if (!room) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  if (room.status === 'deleted') {
+    return res.status(410).json({ error: 'Deleted' });
+  }
+  const invitations = await listByRoom(room.id);
+  res.json({ invitations });
+});
+
+const updateRoomSchema = z.object({
+  title: z.string().trim().min(1).max(150),
+});
+router.patch('/rooms/:id', requireAuthHost, requireRoomOwner, validate(updateRoomSchema), async (req, res) => {
+  const roomId = getRoomId(req);
+  const room = await findById(roomId);
+  if (!room) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  if (room.status === 'deleted') {
+    return res.status(410).json({ error: 'Deleted' });
+  }
+  const updated = await updateTitle(roomId, req.body.title);
+  res.json({ room: updated });
+});
+
+router.delete('/rooms/:id', requireAuthHost, requireRoomOwner, async (req, res) => {
+  const roomId = getRoomId(req);
+  const room = await findById(roomId);
+  if (!room) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  if (room.status === 'deleted') {
+    return res.status(410).json({ error: 'Deleted' });
+  }
+  const removed = await softRemoveById(roomId);
+  res.json({ success: true, room: removed });
+});
+
 const createInvitationSchema = z.object({
   ttlHours: z.number().positive().optional(),
 });
 router.post('/rooms/:id/invitations', requireAuthHost, requireRoomOwner, validate(createInvitationSchema), async (req, res) => {
   const rawId = req.params.id;
   const roomId = Array.isArray(rawId) ? rawId[0] : rawId;
+  const room = await findById(roomId);
+  if (!room) {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  if (room.status === 'deleted') {
+    return res.status(410).json({ error: 'Deleted' });
+  }
   const ttlHours = req.body.ttlHours || parseInt(env.INVITATION_DEFAULT_TTL_HOURS, 10);
   const expiresAt = new Date(Date.now() + ttlHours * 60 * 60 * 1000);
   const invitation = await createInvitation({
@@ -100,6 +164,10 @@ router.post('/invitations/claim', validate(claimSchema), async (req, res) => {
   }
   if (invitation.expiresAt < new Date()) {
     return res.status(410).json({ error: 'Expired' });
+  }
+  const room = await findById(invitation.roomId);
+  if (room && room.status === 'deleted') {
+    return res.status(410).json({ error: 'Deleted' });
   }
   const { token } = issueGuestToken(invitation.roomId, nick);
   res.json({ token, roomId: invitation.roomId, nick });

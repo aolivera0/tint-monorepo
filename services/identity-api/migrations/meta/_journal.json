@@ -8,6 +8,13 @@
       "when": 1791501313886,
       "tag": "0000_shiny_quasimodo",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1791579645914,
+      "tag": "0001_add-room-status",
+      "breakpoints": true
     }
   ]
 }
