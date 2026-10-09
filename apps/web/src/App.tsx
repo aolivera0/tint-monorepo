@@ -1,23 +1,24 @@
-import { useState } from 'react';
-import { ReactionBar, type Reaction } from './components/ReactionBar';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import Login from './pages/Login';
+import Dashboard from './pages/Dashboard';
+import CreateRoom from './pages/CreateRoom';
+import InviteLanding from './pages/InviteLanding';
+import WatchRoom from './pages/WatchRoom';
+import ProtectedRoute from './routes/ProtectedRoute';
+//import Demo from './pages/Demo'; // opcional: mover vista original aquí
 
 export default function App() {
-  const [last, setLast] = useState<Reaction | null>(null);
-
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-tint-bg text-tint-muted">
-      <header className="text-center">
-        <h1 className="text-5xl font-light tracking-[0.3em] text-tint-accent">TINT</h1>
-        <p className="mt-2 text-sm uppercase tracking-widest">Watch Party Experience</p>
-      </header>
-      <section
-        aria-label="Reproductor"
-        className="aspect-video w-full max-w-3xl rounded-2xl bg-tint-surface shadow-[0_0_80px_-10px_#45A29E]"
-      />
-      <ReactionBar onReact={setLast} />
-      <p aria-live="polite" className="h-6 text-sm">
-        {last ? `Última reacción: ${last}` : 'Reacciona a la escena'}
-      </p>
-    </main>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/login" element={<Login />} />
+        <Route path="/invite/:code" element={<InviteLanding />} />
+        <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/rooms/new" element={<ProtectedRoute><CreateRoom /></ProtectedRoute>} />
+        <Route path="/watch/:roomId" element={<WatchRoom />} />
+        {/* <Route path="/demo" element={<Demo />} /> */}
+        <Route path="/" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
