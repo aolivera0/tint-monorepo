@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { apiFetch } from '../lib/api';
+import { inviteClaimErrorMessage } from '../lib/invite';
 import { Button } from '../components/ui/Button';
 import { Field, ErrorAlert, Card } from '../components/ui/Primitives';
 
@@ -23,7 +24,7 @@ export default function InviteLanding() {
       localStorage.setItem('tint_guest_token', res.token);
       navigate(`/watch/${res.roomId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'No se pudo unir a la sala');
+      setError(inviteClaimErrorMessage(err));
     } finally {
       setLoading(false);
     }

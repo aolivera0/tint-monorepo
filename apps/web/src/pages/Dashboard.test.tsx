@@ -60,4 +60,47 @@ describe('Dashboard', () => {
     expect(screen.getByText(/DB caída/)).toBeInTheDocument();
     expect(screen.getByText('Mis salas')).toBeInTheDocument();
   });
+
+  it('cada sala enlaza a Gestionar para obtener el link, renombrar o eliminar', async () => {
+    mockedApi.mockResolvedValueOnce({ rooms: [{ id: '1', title: 'Sala 1' }] });
+    renderDashboard();
+    await waitFor(() => expect(screen.getByText('Sala 1')).toBeInTheDocument());
+    const manage = screen.getByRole('link', { name: /gestionar sala 1/i });
+    expect(manage).toHaveAttribute('href', '/rooms/1');
+  });
+
+  it('elimina la sala con confirmación y la quita de la lista', async () => {
+    const user = (await import('@testing-library/user-event')).default;
+    vi.spyOn(window, 'confirm').mockReturnValueOnce(true);
+    mockedApi.mockResolvedValueOnce({ rooms: [{ id: '1', title: 'Sala 1' }] });
+    mockedApi.mockResolvedValueOnce({ success: true });
+    renderDashboard();
+    await waitFor(() => expect(screen.getByText('Sala 1')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: /eliminar sala 1/i }));
+    await waitFor(() => expect(mockedApi).toHaveBeenCalledWith('/rooms/1', { method: 'DELETE' }));
+    await waitFor(() => expect(screen.queryByText('Sala 1')).not.toBeInTheDocument());
+  });
+
+  it('muestra error si eliminar falla', async () => {
+    const user = (await import('@testing-library/user-event')).default;
+    vi.spyOn(window, 'confirm').mockReturnValueOnce(true);
+    mockedApi.mockResolvedValueOnce({ rooms: [{ id: '1', title: 'Sala 1' }] });
+    mockedApi.mockRejectedValueOnce(new ApiError(403, 'Forbidden'));
+    renderDashboard();
+    await waitFor(() => expect(screen.getByText('Sala 1')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: /eliminar sala 1/i }));
+    await waitFor(() => expect(screen.getByRole('alert')).toBeInTheDocument());
+    expect(screen.getByText('Sala 1')).toBeInTheDocument();
+  });
+
+  it('no elimina si se cancela la confirmación', async () => {
+    const user = (await import('@testing-library/user-event')).default;
+    vi.spyOn(window, 'confirm').mockReturnValueOnce(false);
+    mockedApi.mockResolvedValueOnce({ rooms: [{ id: '1', title: 'Sala 1' }] });
+    renderDashboard();
+    await waitFor(() => expect(screen.getByText('Sala 1')).toBeInTheDocument());
+    await user.click(screen.getByRole('button', { name: /eliminar sala 1/i }));
+    expect(mockedApi).toHaveBeenCalledTimes(1);
+    expect(screen.getByText('Sala 1')).toBeInTheDocument();
+  });
 });

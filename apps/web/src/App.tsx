@@ -15,6 +15,7 @@ export default function App() {
         <Route path="/invite/:code" element={<InviteLanding />} />
         <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/rooms/new" element={<ProtectedRoute><CreateRoom /></ProtectedRoute>} />
+        <Route path="/rooms/:id" element={<ProtectedRoute><CreateRoom /></ProtectedRoute>} />
         <Route path="/watch/:roomId" element={<WatchRoom />} />
         {/* <Route path="/demo" element={<Demo />} /> */}
         <Route path="/" element={<Navigate to="/login" replace />} />

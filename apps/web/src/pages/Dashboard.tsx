@@ -31,6 +31,16 @@ export default function Dashboard() {
     navigate('/login');
   };
 
+  const handleDelete = async (room: Room) => {
+    if (!window.confirm(`¿Eliminar la sala "${room.title}"? Sus links dejarán de funcionar.`)) return;
+    try {
+      await apiFetch(`/rooms/${room.id}`, { method: 'DELETE' });
+      setRooms((prev) => prev.filter((r) => r.id !== room.id));
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'No se pudo eliminar la sala');
+    }
+  };
+
   return (
     <AppShell
       actions={
@@ -110,13 +120,30 @@ export default function Dashboard() {
                     <p className="truncate text-[15px] font-semibold text-white" title={room.title}>
                       {room.title}
                     </p>
-                    <Link
-                      to={`/watch/${room.id}`}
-                      aria-label={`Abrir ${room.title}`}
-                      className="shrink-0 rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-[13px] font-medium text-white transition hover:bg-tint-accent hover:text-tint-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tint-accent"
-                    >
-                      Abrir
-                    </Link>
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Link
+                        to={`/watch/${room.id}`}
+                        aria-label={`Abrir ${room.title}`}
+                        className="rounded-full border border-white/15 bg-white/5 px-4 py-1.5 text-[13px] font-medium text-white transition hover:bg-tint-accent hover:text-tint-bg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tint-accent"
+                      >
+                        Abrir
+                      </Link>
+                      <Link
+                        to={`/rooms/${room.id}`}
+                        aria-label={`Gestionar ${room.title}`}
+                        className="rounded-full px-3 py-1.5 text-[13px] text-tint-muted transition hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tint-accent"
+                      >
+                        Gestionar
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => void handleDelete(room)}
+                        aria-label={`Eliminar ${room.title}`}
+                        className="rounded-full px-3 py-1.5 text-[13px] text-tint-muted transition hover:bg-red-500/10 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                      >
+                        Eliminar
+                      </button>
+                    </div>
                   </div>
                 </Card>
               </li>
