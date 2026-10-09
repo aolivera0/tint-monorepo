@@ -15,9 +15,9 @@ export function BackLink({ to = '/dashboard', label = 'Volver' }: BackLinkProps)
     <Link
       to={to}
       aria-label={label}
-      className="inline-flex items-center gap-1 text-sm text-tint-muted transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tint-accent"
+      className="group inline-flex items-center gap-1.5 text-sm text-tint-muted transition hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tint-accent"
     >
-      <span aria-hidden="true">←</span> Volver
+      <span aria-hidden="true" className="transition-transform group-hover:-translate-x-0.5">←</span> Volver
     </Link>
   );
 }

@@ -95,7 +95,14 @@ export default function Login() {
             </div>
           )}
 
-          <p className="mt-6 border-t border-white/10 pt-4 text-[13px]">
+          <div className="mt-6 flex items-center gap-3" aria-hidden="true">
+            <span className="h-px flex-1 bg-white/10" />
+            <span className="text-[11px] uppercase tracking-[0.18em] text-tint-muted/70">
+              o entra como invitado
+            </span>
+            <span className="h-px flex-1 bg-white/10" />
+          </div>
+          <p className="mt-4 text-[13px] leading-relaxed">
             ¿Tienes un link de invitación? Pega el link o el código, no necesitas cuenta.
           </p>
           <form onSubmit={handleInvite} className="mt-3 space-y-3">
