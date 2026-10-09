@@ -17,7 +17,8 @@ export function ReactionBar({ onReact }: ReactionBarProps) {
           key={r}
           type="button"
           onClick={() => react(r)}
-          className="rounded-full bg-tint-surface px-3 py-2 text-xl transition hover:scale-110 hover:shadow-[0_0_12px_#66FCF1] focus:outline-none focus-visible:ring-2 focus-visible:ring-tint-accent"
+          aria-label={`Reaccionar con ${r}`}
+          className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xl transition hover:scale-105 hover:bg-white/10 active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-tint-accent"
         >
           {r}
         </button>

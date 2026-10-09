@@ -1,17 +1,25 @@
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { vi } from 'vitest';
 import App from './App';
 
-describe('App', () => {
-  it('muestra la marca y el estado inicial', () => {
-    render(<App />);
-    expect(screen.getByRole('heading', { name: 'TINT' })).toBeInTheDocument();
-    expect(screen.getByText('Reacciona a la escena')).toBeInTheDocument();
-  });
+vi.mock('firebase/auth', () => ({
+  signInWithPopup: vi.fn(),
+  GoogleAuthProvider: vi.fn(),
+}));
 
-  it('muestra la última reacción enviada', async () => {
+// Evita inicializar Firebase real en tests.
+vi.mock('./lib/firebase', () => ({
+  auth: {},
+  app: {},
+}));
+
+vi.mock('./lib/api', () => ({
+  apiFetch: vi.fn(),
+}));
+
+describe('App', () => {
+  it('redirige a /login por defecto', () => {
     render(<App />);
-    await userEvent.click(screen.getByRole('button', { name: '🔥' }));
-    expect(screen.getByText('Última reacción: 🔥')).toBeInTheDocument();
+    expect(screen.getByText('Iniciar sesión con Google')).toBeInTheDocument();
   });
 });

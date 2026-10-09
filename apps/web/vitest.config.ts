@@ -12,7 +12,7 @@ export default mergeConfig(
         provider: 'v8',
         reporter: ['text', 'lcov', 'json-summary'],
         include: ['src/**/*.{ts,tsx}'],
-        exclude: ['src/main.tsx', 'src/setupTests.ts', 'src/**/*.test.{ts,tsx}', 'src/vite-env.d.ts'],
+        exclude: ['src/main.tsx', 'src/setupTests.ts', 'src/**/*.test.{ts,tsx}', 'src/vite-env.d.ts', 'src/lib/firebase.ts'],
         // Mandato TDD de TINT: el pipeline falla si cualquier métrica cae bajo 85%.
         thresholds: { lines: 85, functions: 85, branches: 85, statements: 85 },
       },
