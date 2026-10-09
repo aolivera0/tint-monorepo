@@ -5,11 +5,15 @@ export default {
     extend: {
       colors: {
         tint: {
-          bg: '#0B0C10',
-          surface: '#1F2833',
-          muted: '#C5C6C7',
-          accent: '#66FCF1',
-          accentDark: '#45A29E',
+          bg: '#1E1F22',
+          surface: '#2B2D31',
+          card: '#313338',
+          muted: '#B5BAC1',
+          text: '#DBDEE1',
+          accent: '#FF6B1A',
+          accentHover: '#FF8A3D',
+          accentDark: '#C4520A',
+          success: '#23A55A',
         },
       },
     },
