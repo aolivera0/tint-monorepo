@@ -34,7 +34,8 @@ services:
       retries: 10
 
   minio:
-    image: minio/minio:latest
+    #image: minio/minio:latest
+    image: pgsty/minio:latest # Usamos la imagen pgsty dado que la oficial de minio no está disponible actualmente.
     container_name: tint-minio
     command: ["server", "/data", "--console-address", ":9001"]
     environment:
@@ -53,7 +54,8 @@ services:
 
   # Crea el bucket de media al arrancar y termina.
   minio-init:
-    image: minio/mc:latest
+    #image: minio/mc:latest
+    image: pgsty/mc:latest # Usamos la imagen pgsty dado que la oficial de minio no está disponible actualmente.
     container_name: tint-minio-init
     depends_on:
       minio:
