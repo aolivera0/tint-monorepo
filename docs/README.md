@@ -4,7 +4,7 @@
 | :--- | :--- |
 | [Arquitectura del sistema](arquitectura.md) | Visión general: servicios, contratos entre dominios, almacenes, puertos y CI. **Empieza aquí.** |
 | ↳ [Vista de componentes y conectores](arquitectura.md#4-vista-de-componentes-y-conectores-cc) | Componentes en ejecución y cada conector con su tipo y protocolo (REST, WebSocket, Pub/Sub, Streams, S3, SQL), más los flujos de reproducción y social. |
-| ↳ [Vista de despliegue](arquitectura.md#7-vista-de-despliegue) | Contenedores de `docker compose`, procesos locales (identity-api y web), volúmenes, puertos, variables, estado de producción y pipeline de CI/CD. |
+| ↳ [Vista de despliegue](arquitectura.md#7-vista-de-despliegue) | Contenedores de `docker compose` (incluidos identity-api y web), volúmenes, puertos, variables, estado de producción y pipeline de CI/CD. |
 | [Decisiones de arquitectura (ADRs)](adr/README.md) | Por qué el sistema es como es: una decisión por archivo, con contexto, alternativas y consecuencias. |
 | [Usuarios, identidad y permisos](usuarios-e-identidad.md) | Tipos de usuario, matriz de permisos, esquema de PostgreSQL, esquemas de tokens, flujos de login, invitación, retiro y bloqueo. |
 | [Dominio de Reproducción](dominio-reproduccion.md) | Canal Sync v2: Reloj Maestro, comandos, drift, presencia, delegación, revocación, subida y biblioteca de vídeos, métricas, benchmarks y pruebas. |
