@@ -530,7 +530,7 @@ Detalle de los eventos y sus campos en [AGENTS.md › Eventos de analítica](AGE
 
 ## 5. Configuración
 
-identity-api **no está en `docker-compose.yml`**: corre con `npm run dev` y lee `services/identity-api/.env` (plantilla: [`.env.example`](.env.example)). La tabla completa con valores por defecto está en [AGENTS.md › Variables de Entorno](AGENTS.md#variables-de-entorno).
+identity-api corre en `docker-compose.yml` (`Dockerfile` multi-stage y migraciones en el servicio `identity-migrate`); para desarrollar con recarga, `npm run dev` lee `services/identity-api/.env` (plantilla: [`.env.example`](.env.example)). La tabla completa con valores por defecto está en [AGENTS.md › Variables de Entorno](AGENTS.md#variables-de-entorno).
 
 | Grupo | Variables | Notas |
 | :--- | :--- | :--- |

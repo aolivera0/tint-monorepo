@@ -331,27 +331,21 @@ Esquemas de tokens, matriz de permisos y flujos de login, invitación y retiro e
 **Requisitos:** Docker, Go 1.22+, Python 3.11+, Node.js 22+ y FFmpeg (para el media-worker fuera de Docker).
 
 ```bash
-# 1. Clonar e infraestructura (PostgreSQL, Redis, MinIO + bucket, media-worker, social-core :8082, sync-core :8083)
+# 1. Clonar y levantar todo (PostgreSQL, Redis, MinIO + bucket, identity-api :8081 con sus
+#    migraciones, web :5173, media-worker, analytics :8084, social-core :8082, sync-core :8083)
 git clone https://github.com/HanamDavid/tint-monorepo.git && cd tint-monorepo
-cp .env.example .env
-docker compose up -d
+cp .env.example .env            # completa VITE_FIREBASE_* y FIREBASE_PROJECT_ID
+docker compose up -d --build    # si cambias VITE_*, vuelve a ejecutarlo: se incrustan al compilar
 
-# 2. identity-api (:8081): dependencias, migraciones 0000–0005 y servidor
-#    (el media-worker de docker compose necesita la tabla videos: migra antes de subir vídeos)
-cd services/identity-api
-cp .env.example .env            # define FIREBASE_PROJECT_ID
-npm ci && npx drizzle-kit migrate && npm run dev
+# 2. Desarrollo con recarga (opcional): detén el contenedor y corre el servicio local
+#    cd services/identity-api && cp .env.example .env && npm ci && npm run dev
+#    cd apps/web && cp .env.example .env && npm ci && npm run dev
 
 # 3. media-worker: ya corre en docker compose (`docker logs -f tint-media-worker`).
 #    Para desarrollarlo fuera de Docker: pip install -r requirements-dev.txt y
 #    DATABASE_URL=… S3_ACCESS_KEY=… S3_SECRET_KEY=… PYTHONPATH=src python -m media_worker
 
-# 4. web (:5173)
-cd apps/web
-cp .env.example .env            # Firebase del cliente; VITE_SYNC_WS_URL=ws://localhost:8083/ws/sync
-npm ci && npm run dev
-
-# 5. Suite global de pruebas (TDD Policy Check) y flujo completo contra la infraestructura real
+# 4. Suite global de pruebas (TDD Policy Check) y flujo completo contra la infraestructura real
 make test-all
 cd services/identity-api && WAIT_WORKER=1 npm run test:integration
 ```

@@ -28,7 +28,7 @@ La documentación de features vive en [`docs/`](docs/README.md), con diagramas M
 2. **TDD obligatorio:** Red → Green → Refactor. Cobertura mínima **85 %** por servicio; el CI (`.github/workflows/ci-pipeline.yml`) bloquea el merge si no se cumple.
 3. **Conventional Commits en español:** `tipo(alcance): descripción`, con el dominio como alcance: `feat(sync-core): …`, `fix(identity-api): …`, `docs(web): …`, `perf(sync-core): …`, `ci: …`, `chore: …`. El cuerpo explica el *porqué* y, si hay mediciones, las incluye.
 4. **Ramas:** `main` (producción) y `develop` (integración) están protegidas. Trabaja en `feat/*`, `fix/*` o `chore/*` y abre el PR hacia `develop`.
-5. **Infraestructura local:** `docker compose up -d` (PostgreSQL, Redis, MinIO, media-worker, analytics, social-core y sync-core). **Nunca subas `.env`** ni credenciales; documenta las variables nuevas en el `.env.example` correspondiente.
+5. **Infraestructura local:** `docker compose up -d` (PostgreSQL, Redis, MinIO, identity-api, web, media-worker, analytics, social-core y sync-core). **Nunca subas `.env`** ni credenciales; documenta las variables nuevas en el `.env.example` correspondiente.
 6. **Verificación:** `make test-all` antes de abrir un PR, más los comandos propios del dominio.
 7. **Archivos ajenos:** los `.docx` de planeación en la raíz no se versionan. No los agregues a commits.
 8. **Dependencias:** no agregues dependencias sin justificarlas en el commit y en el Stack Técnico del `AGENTS.md` del dominio. Fija versiones exactas en Go y prefiere versiones exactas en npm.

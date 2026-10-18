@@ -296,22 +296,17 @@ Son los únicos puntos en los que un PR puede necesitar coordinar dos dominios (
 
 ## 7. Vista de despliegue
 
-### 7.1 Entorno local (el único que existe hoy)
+### 7.1 Entorno local con docker compose (el único que existe hoy)
 
 ```mermaid
 flowchart TB
     subgraph browser["Navegador del usuario"]
-        SPA["SPA apps/web<br/>Vite dev :5173<br/>o build estático dist/"]
+        SPA["SPA apps/web<br/>servida por nginx :5173"]
     end
 
     subgraph ext["Servicios externos"]
         FBA["Firebase Auth<br/>Google"]
         GK["Claves públicas de Google<br/>JWKS y certificados x509"]
-    end
-
-    subgraph dev["Máquina del desarrollador - procesos fuera de compose"]
-        VITE["npm run dev<br/>Vite :5173"]
-        IDP["identity-api<br/>npm run dev · tsx watch :8081"]
     end
 
     subgraph docker["Host Docker - docker compose up -d"]
@@ -322,6 +317,9 @@ flowchart TB
             MINIT["tint-minio-init<br/>pgsty/mc:latest<br/>una vez: bucket + regla ILM incoming/ 2 días"]
         end
         subgraph c_apps["Servicios construidos con build"]
+            WEBC["tint-web<br/>nginx-unprivileged<br/>5173:5173"]
+            IDP["tint-identity-api<br/>node:22-alpine<br/>8081:8081"]
+            IDM["tint-identity-migrate<br/>drizzle-kit migrate<br/>una vez"]
             MW["tint-media-worker<br/>python:3.11-slim + ffmpeg<br/>sin puertos"]
             AN["tint-analytics<br/>python:3.11-slim<br/>8084:8084"]
             SOC["tint-social-core<br/>distroless/static nonroot<br/>8082:8082"]
@@ -332,16 +330,17 @@ flowchart TB
         V3[("volumen minio-data")]
     end
 
-    VITE -- "sirve la SPA" --> SPA
+    WEBC -- "sirve la SPA" --> SPA
     SPA -- "login" --> FBA
     SPA -- "HTTP :8081" --> IDP
     SPA -- "WS :8083" --> SYN
     SPA -- "WS :8082" --> SOC
     SPA -- "HTTP :8084" --> AN
     SPA -- "HTTP :9000 firmado" --> MI
-    IDP -- "localhost:5432" --> PG
-    IDP -- "localhost:6379" --> RD
-    IDP -- "localhost:9000" --> MI
+    IDP -- "postgres:5432" --> PG
+    IDP -- "redis:6379" --> RD
+    IDP -- "minio:9000" --> MI
+    IDM -- "postgres:5432" --> PG
     IDP -- "HTTPS" --> GK
     SOC -- "HTTPS" --> GK
     PG --- V1
@@ -354,8 +353,9 @@ flowchart TB
     SYN -- "redis:6379" --> RD
 ```
 
-- **identity-api no está en `docker-compose.yml` ni tiene Dockerfile.** Corre como proceso de Node 22 en la máquina del desarrollador (`npm run dev`, `tsx watch src/server.ts`) y llega a la infraestructura por los puertos publicados en `localhost`. Existe `npm run build` (`tsup` → `dist/`) y `npm start`, pero no hay imagen. Sus migraciones se aplican a mano con `npx drizzle-kit migrate`.
-- **La web tampoco está en compose:** `npm run dev` (Vite 5173) o `npm run build` (`tsc -b && vite build` → `dist/`, servible con `npm run preview`). No hay servidor estático configurado en el repositorio.
+- **identity-api corre en contenedor** (`services/identity-api/Dockerfile`, multi-stage): el target `runtime` solo lleva dependencias de producción y `dist/` (tsup), con el usuario `node`. Sus migraciones las aplica el servicio `identity-migrate` (target `migrate` del mismo Dockerfile, `drizzle-kit migrate`), que termina antes de que arranque identity-api. Habla con la infraestructura por los hosts internos (`postgres`, `redis`, `minio`), pero firma las URLs del navegador con `MINIO_PUBLIC_ENDPOINT` (`http://localhost:9000`): la firma SigV4 incluye el host.
+- **La web corre en contenedor** (`apps/web/Dockerfile`): Vite compila `dist/` y nginx sin privilegios lo sirve en 5173 con fallback a `index.html` para react-router. Las variables `VITE_*` se incrustan **al compilar** (build args) y son las URLs que ve el navegador; si cambian, hay que reconstruir con `docker compose up -d --build`. Es una SPA estática provisional: se reemplazará al pasar a SSR.
+- **Desarrollo sin contenedores:** `npm run dev` en `services/identity-api` y `apps/web` sigue funcionando (recarga en caliente); en ese caso detén el contenedor equivalente para liberar el puerto.
 - **Orden de arranque** (`depends_on`): `minio-init` espera a que MinIO esté sano; `media-worker` espera a PostgreSQL y Redis sanos y a que `minio-init` termine bien; `analytics`, `social-core` y `sync-core` esperan a Redis (analytics también a PostgreSQL). analytics aplica sus migraciones al arrancar.
 - **Salud y métricas:** los cuatro servicios de compose exponen `/healthz` (media-worker no tiene HTTP); solo sync-core expone `/metrics` (Prometheus). social-core no tiene `/metrics`.
 - **Réplicas:** compose levanta **una** réplica de cada servicio. El diseño soporta N réplicas de sync-core y social-core (Pub/Sub, CAS y `HSETNX` entre réplicas), pero no hay balanceador ni configuración multirréplica en el repositorio.
@@ -370,8 +370,9 @@ flowchart TB
 | `tint-analytics` | `build: ./services/analytics` (`python:3.11-slim`, usuario `worker`, `python -m analytics`) | `ANALYTICS_PORT` (8084) → 8084 | — | `DATABASE_URL`, `REDIS_URL`, `JWT_SECRET`, `JWT_ISSUER`, `JWT_AUDIENCE`, `ANALYTICS_PORT`, `ANALYTICS_ALLOWED_ORIGINS`, `ANALYTICS_CONSUMER` |
 | `tint-social-core` | `build: ./services/social-core` (multi-stage `golang:1.22-alpine` → `distroless/static-debian12:nonroot`) | 8082 → 8082 | — | `SOCIAL_CORE_ADDR`, `REDIS_URL`, `JWT_*`, `FIREBASE_PROJECT_ID`, `ALLOWED_ORIGINS` (de `SOCIAL_ALLOWED_ORIGINS`) |
 | `tint-sync-core` | `build: ./services/sync-core` (multi-stage `golang:1.22-alpine` → `distroless/static-debian12:nonroot`) | 8083 → 8080 | — | `SYNC_CORE_ADDR`, `REDIS_URL`, `JWT_*`, `ALLOWED_ORIGINS` (de `SYNC_ALLOWED_ORIGINS`) |
-| identity-api (proceso local) | `services/identity-api` con Node 22 (`tsx watch`) | 8081 | — | `services/identity-api/.env.example`: `IDENTITY_API_PORT`, `DATABASE_URL`, `REDIS_URL`, `FIREBASE_PROJECT_ID`, `JWT_*`, `MINIO_*`, TTLs, `MAX_UPLOAD_BYTES` |
-| web (proceso local) | `apps/web` con Vite 5 | 5173 | — | `apps/web/.env.example`: `VITE_IDENTITY_API_URL`, `VITE_FIREBASE_*`, `VITE_SYNC_WS_URL`, `VITE_SOCIAL_WS_URL`, `VITE_SYNC_ENCODING`, `VITE_ANALYTICS_API_URL`, `VITE_DEMO_VIDEO_URL` |
+| `tint-identity-migrate` | `build: ./services/identity-api` (`target: migrate`, `node:22-alpine`), se ejecuta una vez | — | — | `DATABASE_URL` |
+| `tint-identity-api` | `build: ./services/identity-api` (`target: runtime`, `node:22-alpine`, usuario `node`, `node dist/server.js`) | 8081 → 8081 | — | `IDENTITY_API_PORT`, `DATABASE_URL`, `REDIS_URL`, `JWT_*`, `FIREBASE_PROJECT_ID`, `MINIO_ENDPOINT`, `MINIO_PUBLIC_ENDPOINT`, `MINIO_ACCESS_KEY`, `MINIO_SECRET_KEY`, `MINIO_BUCKET` (resto de `services/identity-api/.env.example` con su valor por defecto) |
+| `tint-web` | `build: ./apps/web` (Vite → `nginxinc/nginx-unprivileged:1.27-alpine`) | 5173 → 5173 | — | Build args `VITE_IDENTITY_API_URL`, `VITE_SYNC_WS_URL`, `VITE_SOCIAL_WS_URL`, `VITE_ANALYTICS_API_URL`, `VITE_FIREBASE_*` (también `VITE_SYNC_ENCODING` y `VITE_DEMO_VIDEO_URL` en el Dockerfile) |
 | Firebase Auth | Servicio externo de Google | HTTPS | — | `FIREBASE_PROJECT_ID` (identity-api, social-core), `VITE_FIREBASE_*` (web) |
 
 Los valores por defecto de compose salen del [`.env.example` raíz](../.env.example). `JWT_SECRET`, `JWT_ISSUER` y `JWT_AUDIENCE` deben ser idénticos en identity-api, sync-core, social-core y analytics.
@@ -415,8 +416,8 @@ flowchart LR
 
 | Servicio | Puerto | Notas |
 | :--- | :--- | :--- |
-| web | 5173 | `npm run dev` |
-| identity-api | 8081 | `npm run dev` (fuera de compose) |
+| web | 5173 | `docker compose` (nginx); `npm run dev` para desarrollo |
+| identity-api | 8081 | `docker compose` (`/api/v1/healthz`); `npm run dev` para desarrollo |
 | social-core | 8082 | `docker compose` (`/ws/social`, `/healthz`) |
 | sync-core | 8083 → 8080 | `docker compose` (`/ws/sync`, `/healthz`, `/metrics`) |
 | analytics | 8084 | `docker compose` (`/healthz`, `/api/v1/rooms/{id}/kpis`, `/reactions/heatmap`, `/timeline`) |

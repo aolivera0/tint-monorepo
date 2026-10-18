@@ -1,4 +1,4 @@
-# Entorno local de TINT: PostgreSQL, Redis, MinIO, media-worker, analytics, social-core y sync-core.
+# Entorno local de TINT: PostgreSQL, Redis, MinIO, identity-api, web, media-worker, analytics, social-core y sync-core.
 # Uso: cp .env.example .env && docker compose up -d
 
 services:
@@ -73,6 +73,75 @@ services:
       MINIO_ROOT_USER: ${MINIO_ROOT_USER:-tintadmin}
       MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-tintadmin123}
       MINIO_BUCKET: ${MINIO_BUCKET:-tint-media}
+
+  # Migraciones de Drizzle de identity-api: se ejecutan una vez y terminan.
+  identity-migrate:
+    build:
+      context: ./services/identity-api
+      target: migrate
+    container_name: tint-identity-migrate
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-tint}:${POSTGRES_PASSWORD:-tint}@postgres:5432/${POSTGRES_DB:-tint}
+    restart: "no"
+
+  # identity-api (Node 22 + Express): usuarios, salas, tokens y subida de vídeo.
+  # JWT_* deben ser los mismos que usan sync-core, social-core y analytics.
+  identity-api:
+    build:
+      context: ./services/identity-api
+      target: runtime
+    container_name: tint-identity-api
+    restart: unless-stopped
+    depends_on:
+      identity-migrate:
+        condition: service_completed_successfully
+      redis:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+    environment:
+      NODE_ENV: production
+      IDENTITY_API_PORT: "8081"
+      DATABASE_URL: postgres://${POSTGRES_USER:-tint}:${POSTGRES_PASSWORD:-tint}@postgres:5432/${POSTGRES_DB:-tint}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-in-prod}
+      JWT_ISSUER: ${JWT_ISSUER:-tint-identity}
+      JWT_AUDIENCE: ${JWT_AUDIENCE:-tint:room}
+      FIREBASE_PROJECT_ID: ${FIREBASE_PROJECT_ID:-tint-login}
+      # MinIO: el servicio habla con el host interno; la URL firmada que ve el navegador usa el público.
+      MINIO_ENDPOINT: http://minio:9000
+      MINIO_PUBLIC_ENDPOINT: ${MINIO_PUBLIC_ENDPOINT:-http://localhost:9000}
+      MINIO_ACCESS_KEY: ${MINIO_ROOT_USER:-tintadmin}
+      MINIO_SECRET_KEY: ${MINIO_ROOT_PASSWORD:-tintadmin123}
+      MINIO_BUCKET: ${MINIO_BUCKET:-tint-media}
+    ports:
+      - "8081:8081"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8081/api/v1/healthz').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Web (React + Vite compilado, servido por nginx). Las URLs VITE_* son las que ve el
+  # navegador y se incrustan al compilar: si las cambias, reconstruye con --build.
+  web:
+    build:
+      context: ./apps/web
+      args:
+        VITE_IDENTITY_API_URL: ${VITE_IDENTITY_API_URL:-http://localhost:8081/api/v1}
+        VITE_SYNC_WS_URL: ${VITE_SYNC_WS_URL:-ws://localhost:8083/ws/sync}
+        VITE_SOCIAL_WS_URL: ${VITE_SOCIAL_WS_URL:-ws://localhost:8082/ws/social}
+        VITE_ANALYTICS_API_URL: ${VITE_ANALYTICS_API_URL:-http://localhost:8084/api/v1}
+        VITE_FIREBASE_API_KEY: ${VITE_FIREBASE_API_KEY:-}
+        VITE_FIREBASE_AUTH_DOMAIN: ${VITE_FIREBASE_AUTH_DOMAIN:-}
+        VITE_FIREBASE_PROJECT_ID: ${VITE_FIREBASE_PROJECT_ID:-}
+    container_name: tint-web
+    restart: unless-stopped
+    ports:
+      - "5173:5173"
 
   # Media worker (Python + FFmpeg): consume media:uploads, valida el vídeo subido
   # a incoming/, extrae el Ambilight y publica {id}/source.<ext> + ambilight.json.
