@@ -52,6 +52,7 @@ class MainActivity : ComponentActivity() {
                 when {
                     joinState is JoinState.Joined -> RoomScreen(
                         room = (joinState as JoinState.Joined).room,
+                        container = container,
                         onLeave = join::leave,
                     )
                     showJoin || pendingCode != null -> JoinScreen(

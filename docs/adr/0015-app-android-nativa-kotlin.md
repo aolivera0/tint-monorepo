@@ -46,7 +46,7 @@ flowchart LR
 **Riesgos**
 - Los tokens se guardan en `SharedPreferences` sin cifrar, igual que la web usa `localStorage`; revisar `EncryptedSharedPreferences` antes de publicar.
 - Transmisión en vivo y voz no tienen backend (RTC/VOI): AND-06 y AND-07 quedan condicionados a que exista.
-- Los WebSockets limitan `ALLOWED_ORIGINS`; el cliente nativo no envía `Origin`, comportamiento por verificar contra sync-core al implementar AND-03.
+- Los WebSockets limitan `ALLOWED_ORIGINS`; el cliente nativo no envía `Origin`. Verificado (2026-10-31): un cliente OkHttp sin `Origin` conecta a sync-core desplegado por `wss://`.
 
 ## Referencias
 - Código: `apps/android/`

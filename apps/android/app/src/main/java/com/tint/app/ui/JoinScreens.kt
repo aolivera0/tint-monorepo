@@ -22,12 +22,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.tint.app.join.JoinState
-import com.tint.app.join.JoinedRoom
 
 /** Formulario para entrar a una sala con un link o código. `initialCode` viene de un deep link. */
 @Composable
@@ -72,21 +70,5 @@ fun JoinScreen(state: JoinState, initialCode: String?, onSubmit: (code: String, 
             Spacer(Modifier.height(8.dp))
             OutlinedButton(onClick = onBack, modifier = Modifier.fillMaxWidth()) { Text("Volver") }
         }
-    }
-}
-
-/** Marcador de la sala: el reproductor, el chat y la trivia llegan en las fases siguientes. */
-@Composable
-fun RoomScreen(room: JoinedRoom, onLeave: () -> Unit) {
-    Column(
-        modifier = Modifier.fillMaxSize().background(TintBackground).padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(room.title ?: "Sala sin título", style = MaterialTheme.typography.headlineMedium, color = TintAccent, textAlign = TextAlign.Center)
-        Spacer(Modifier.height(8.dp))
-        Text("Entraste como ${room.nick}", color = Color.White)
-        Spacer(Modifier.height(32.dp))
-        OutlinedButton(onClick = onLeave, modifier = Modifier.fillMaxWidth()) { Text("Salir de la sala") }
     }
 }

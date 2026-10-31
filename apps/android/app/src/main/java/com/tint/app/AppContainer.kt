@@ -8,6 +8,7 @@ import com.tint.app.join.InviteRepository
 import com.tint.app.net.ApiClient
 import com.tint.app.net.StoredTokenStore
 import com.tint.app.store.PrefsKeyValueStore
+import com.tint.app.sync.PlaybackRepository
 import okhttp3.OkHttpClient
 
 /** Dependencias de la app (un único grafo, sin framework de inyección). */
@@ -36,4 +37,5 @@ class AppContainer(context: Context) {
     )
 
     val invites = InviteRepository(api, tokens, deviceId)
+    val playback = PlaybackRepository(api, tokens)
 }

@@ -7,6 +7,7 @@ Eres el agente especializado en el cliente móvil de **TINT**: una app nativa en
 - Kotlin 2.0.21 + Jetpack Compose (BOM 2024.10.01, Material 3), `minSdk` 26, `targetSdk` 35.
 - Gradle 8.10.2 (wrapper) + Android Gradle Plugin 8.7.3, JDK 17. Versiones en `gradle/libs.versions.toml`.
 - Firebase Auth (BoM 33.5.1) + `androidx.credentials` 1.3.0 + `googleid` 1.1.1 — login con Google contra el mismo proyecto Firebase que la web. Se usa la BoM 33.x porque la 35.x se compila con una versión de Kotlin más nueva que la del proyecto. Plugin `com.google.gms.google-services` 4.5.0.
+- Media3 (`media3-exoplayer` y `media3-ui`) 1.5.1 — reproductor del vídeo de la sala; es la última versión compatible con `compileSdk` 35 (la 1.9+ pide uno más nuevo).
 - OkHttp 4.12.0 — REST y WebSocket (cliente estándar de facto en Android; sin dependencias transitivas relevantes).
 - `kotlinx-serialization-json` 1.7.3 — JSON tolerante a campos nuevos (`ignoreUnknownKeys`).
 - `kotlinx-coroutines-core` 1.9.0 — llamadas de red suspendibles.
@@ -38,9 +39,12 @@ Eres el agente especializado en el cliente móvil de **TINT**: una app nativa en
 | :--- | :--- |
 | `config/Endpoints.kt` | URLs del backend (REST y los dos WebSockets, con `room_id` y `token` en la query). |
 | `net/ApiClient.kt` | Cliente REST: `ApiAuth` (`AUTO`/`HOST`/`GUEST`), `ApiError`, 401 de host → borra la sesión y avisa. |
+| `net/TokenClaims.kt` | Lee el `sub` de un JWT **sin verificar la firma**: solo para decidir qué mostrar (¿estoy silenciado?); decide siempre el servidor. |
 | `net/TokenStore.kt` | `tint_token` (host) y `tint_guest_token` (invitado), mismas claves que la web. |
 | `auth/` | `AuthRepository` (Google → Firebase → `tint_token` → `POST /auth/verify`; sin sesión si algo falla), `LoginController` (estado de la pantalla), y las capas finas `CredentialManagerGoogleSource` y `FirebaseAuthGateway`. |
 | `join/` | `InviteCode` (extrae el código de un link, ruta o código pelado), `InviteRepository` (`POST /invitations/claim` anónimo con `deviceId`; guarda `tint_guest_token` y **no borra** la sesión de host, a diferencia de la web) y `JoinController` (nick de 2 a 24 caracteres). |
+| `sync/` | `SyncProtocol` (mensajes del Canal Sync v2 en JSON, `SYNC_CHECK`, backoff), `ResilientSocket` (conexión que reconecta con backoff, ignora sockets viejos y no reconecta ante `4001`/`4003`; la usan los dos canales) y `SyncClient` (como participante: descarta por `version`, responde `HEARTBEAT`, reconecta; `4001`/`4003` son terminales), `SyncedPlayback` (aplica el estado maestro y las correcciones a un `PlayerPort`; salta solo con > 250 ms de desfase, 50 ms en pausa), `PositionTracker` (ExoPlayer solo se lee en el hilo principal y el `SYNC_CHECK` sale por el del socket), `PlaybackRepository` (`GET /rooms/:id/playback` con el token de invitado) y `RoomController` (pide la URL cuando cambia el `media_id`). `OkHttpSyncSocketFactory` y `ExoPlayerPort` son capas finas sin pruebas unitarias. |
+| `social/` | `SocialProtocol` (chat, historial, avisos, reacciones, ajustes, errores y trivia del Canal Social; ignora encuestas, láser y recap por ahora) y `SocialClient` (dedup por `event_id`, tope de 50 mensajes, pre-validación del modo lento y del silencio para explicar la regla, máximo 5 reacciones por segundo; trivia: `TriviaState`, `answerTrivia` una sola vez y dentro de la ventana, cuenta regresiva con el reloj local). Reconecta con `sync/ResilientSocket`, que comparte con el Canal Sync. |
 | `identity/DeviceIdProvider.kt` | `tint_device_id` (UUID persistente) para el bloqueo por dispositivo. |
 | `store/` | `KeyValueStore` y su implementación sobre `SharedPreferences`. |
 | `AppContainer.kt` · `MainActivity.kt` | Cableado y pantalla. Capa fina excluida de la cobertura. |

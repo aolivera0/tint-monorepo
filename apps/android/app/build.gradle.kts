@@ -60,6 +60,8 @@ kover {
                     "com.tint.app.ui.*",
                     "com.tint.app.auth.CredentialManagerGoogleSource*",
                     "com.tint.app.auth.FirebaseAuthGateway*",
+                    "com.tint.app.sync.OkHttpSyncSocketFactory*",
+                    "com.tint.app.sync.ExoPlayerPort*",
                     "com.tint.app.BuildConfig",
                     "*ComposableSingletons*",
                 )
@@ -83,6 +85,8 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services)
     implementation(libs.googleid)
+    implementation(libs.media3.exoplayer)
+    implementation(libs.media3.ui)
 
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
