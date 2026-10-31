@@ -103,6 +103,26 @@ jobs:
       - name: vitest + coverage gate (thresholds en vitest.config.ts)
         run: npx vitest run --coverage
 
+  android:
+    name: Android · apps/android
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+      - name: google-services.json de relleno (el real no se versiona)
+        run: cp app/google-services.json.example app/google-services.json
+      - name: Pruebas y cobertura (Kover, umbral en app/build.gradle.kts)
+        run: ./gradlew testDebugUnitTest koverVerifyDebug
+      - name: APK de debug
+        run: ./gradlew assembleDebug
+
   # Humo de carga del Canal Sync (SYNC-TEST-01 reducido): 50 conexiones
   # reales contra sync-core + Redis. La prueba completa de 500 conexiones
   # debe correrse con k6 en una máquina distinta a la del servidor.
@@ -147,16 +167,17 @@ jobs:
   ci-gate:
     name: CI Gate
     if: always()
-    needs: [go, python, web, identity-api, sync-load-smoke]
+    needs: [go, python, web, identity-api, android, sync-load-smoke]
     runs-on: ubuntu-latest
     steps:
       - name: Verificar resultado de todos los jobs
         run: |
-          echo "go=${{ needs.go.result }} python=${{ needs.python.result }} web=${{ needs.web.result }} identity-api=${{ needs.identity-api.result }} load=${{ needs.sync-load-smoke.result }}"
+          echo "go=${{ needs.go.result }} python=${{ needs.python.result }} web=${{ needs.web.result }} identity-api=${{ needs.identity-api.result }} android=${{ needs.android.result }} load=${{ needs.sync-load-smoke.result }}"
           if [ "${{ needs.go.result }}" != "success" ] || \
              [ "${{ needs.python.result }}" != "success" ] || \
              [ "${{ needs.web.result }}" != "success" ] || \
              [ "${{ needs.identity-api.result }}" != "success" ] || \
+             [ "${{ needs.android.result }}" != "success" ] || \
              [ "${{ needs.sync-load-smoke.result }}" != "success" ]; then
             echo "::error::Pruebas o cobertura (≥ ${COVERAGE_MIN}%) no superadas. Merge bloqueado."
             exit 1

@@ -6,6 +6,7 @@ Este repositorio es un monorepo multi-lenguaje (Go, TypeScript y Python). **Ante
 | Dominio | Ruta | Stack | Guía |
 | :--- | :--- | :--- | :--- |
 | Frontend | `apps/web` | React 18, TS, Vite, Tailwind | [apps/web/AGENTS.md](apps/web/AGENTS.md) |
+| Android | `apps/android` | Kotlin, Jetpack Compose, OkHttp | [apps/android/AGENTS.md](apps/android/AGENTS.md) |
 | Identidad | `services/identity-api` | Node 22, Express 5, Drizzle/PostgreSQL | [services/identity-api/AGENTS.md](services/identity-api/AGENTS.md) |
 | Sincronización | `services/sync-core` | Go 1.22, WebSockets, Redis | [services/sync-core/AGENTS.md](services/sync-core/AGENTS.md) |
 | Social & Gamificación | `services/social-core` | Go, Redis | [services/social-core/AGENTS.md](services/social-core/AGENTS.md) |
@@ -65,6 +66,7 @@ Cambiar uno exige actualizar **ambos lados**, sus pruebas y [docs/arquitectura.m
 | Go (`sync-core`, `social-core`) | `gofmt -l .` vacío · `go vet ./...` · `go test -race -coverprofile=coverage.out ./...` · `../../scripts/check-go-coverage.sh coverage.out 85` |
 | `identity-api` | `npm ci` · `npm run typecheck` · `npx vitest run --coverage` |
 | `apps/web` | `npm ci` · `npm run lint` · `npm run typecheck` · `npx vitest run --coverage` · `npm run build` |
+| `apps/android` | `./gradlew testDebugUnitTest koverVerifyDebug assembleDebug` (JDK 17) |
 | Python (`media-worker`, `analytics`) | `ruff check . && ruff format --check .` · `pytest --cov=src --cov-fail-under=85` |
 | Carga del Canal Sync | `k6 run -e VUS=50 -e DURATION=20s services/sync-core/loadtest/sync.js` (CI); 500 VUs desde otra máquina |
 

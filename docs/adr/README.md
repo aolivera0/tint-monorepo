@@ -22,6 +22,7 @@ Cada ADR de esta carpeta se escribió a partir de evidencia del repositorio (có
 | [0012](0012-trivia-con-reloj-del-servidor-y-ancla-del-recap.md) | Trivia con el reloj del servidor y el ancla del recap | Aceptada | 2026-10-11 | social-core, web |
 | [0013](0013-bloqueo-de-invitados-por-dispositivo.md) | Bloqueo de invitados por dispositivo | Aceptada | 2026-10-11 | identity-api, web |
 | [0014](0014-upgrade-y-cierre-4xxx-para-estados-terminales.md) | Upgrade y cierre `4xxx` para estados terminales en el Canal Sync | Aceptada | 2026-10-11 | sync-core, web (social-core pendiente) |
+| [0015](0015-app-android-nativa-kotlin.md) | App Android nativa en Kotlin | Aceptada | 2026-10-31 | android (nuevo), infra |
 
 ```mermaid
 flowchart LR

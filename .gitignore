@@ -9,6 +9,14 @@
 .env.*
 !.env.example
 
+# Android (apps/android)
+.gradle/
+build/
+local.properties
+*.keystore
+*.jks
+google-services.json
+
 # Logs
 *.log
 

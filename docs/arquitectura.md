@@ -81,6 +81,7 @@ flowchart TB
 | Servicio | Responsabilidad | Estado | Guía |
 | :--- | :--- | :--- | :--- |
 | `apps/web` | UI: login, dashboard, gestión de salas, invitación, biblioteca y subida de vídeo, reproductor sincronizado con barra del host (volumen, calidad, velocidad), puntero láser, Ambilight, chat con moderación y spoilers, encuestas, trivia, recap, bloqueo de invitados y analítica de la sala | ✅ Implementado (UI nueva con `framer-motion`, logo SVG, Ambilight y láser) | [README](../apps/web/README.md) · [AGENTS](../apps/web/AGENTS.md) |
+| `apps/android` | App nativa en Kotlin (Jetpack Compose) que consume los mismos contratos que la web: REST `/api/v1`, Canal Sync v2 y Canal Social ([ADR 0015](adr/0015-app-android-nativa-kotlin.md)) | 🟡 Cliente REST, URLs compartidas, APK de debug login con Google (AND-01) y unirse por link o código (AND-02); sync, chat y trivia por fases | [README](../apps/android/README.md) · [AGENTS](../apps/android/AGENTS.md) |
 | `services/identity-api` | Usuarios, salas (renombrar, borrado lógico), invitaciones, tokens (guest token, sync-ticket, analytics-ticket), subida y reproducción de vídeo, biblioteca `GET /videos`, invitados (retirar y bloquear por dispositivo con `room_bans`) | ✅ Implementado | [README](../services/identity-api/README.md) · [AGENTS](../services/identity-api/AGENTS.md) |
 | `services/sync-core` | Reloj Maestro, Canal Sync v2 (`PLAY`/`PAUSE`/`SEEK`/`RATE`/`LOAD`/`VOLUME`/`QUALITY`), drift, presencia, delegación, revocación, métricas | ✅ Implementado (v2) | [README](../services/sync-core/README.md) · [AGENTS](../services/sync-core/AGENTS.md) |
 | `services/social-core` | Chat en vivo (`/ws/social`) con moderación (modo lento y silencio) y spoilers, reacciones, puntero láser, encuestas, recap y trivias con rankings | 🟢 Chat, moderación, spoilers, reacciones, láser, encuestas, recap y trivias implementados. Heatmap: solo los buckets de 5 s en memoria (`internal/reactions/buckets.go`); las claves `room:{id}:heatmap` y `video:{id}:heatmap:history` y el evento de heatmap en vivo cada 1 s están **previstos**. La retransmisión de Ambilight en vivo también está **prevista** (hoy la web descarga `ambilight.json` por HTTP) | [README](../services/social-core/README.md) · [AGENTS](../services/social-core/AGENTS.md) |
@@ -428,6 +429,7 @@ flowchart LR
 ## 9. Calidad, CI y CD
 
 - **CI** (`.github/workflows/ci-pipeline.yml`): ver el diagrama de la [§7.3](#73-pipeline-de-ci-y-cd). Cobertura mínima `COVERAGE_MIN = 85` en todos los jobs (en Go con `scripts/check-go-coverage.sh`; en web e identity-api con los umbrales de `vitest.config.ts`). El job `ci-gate` corre siempre y falla si algún job no termina en `success`.
+- **Android:** el job `android` (JDK 17, Gradle) corre `testDebugUnitTest`, `koverVerifyDebug` (mínimo 85 %) y `assembleDebug` en `apps/android`.
 - **Diferencia con el gate de AGENTS:** el gate de `apps/web` en el [AGENTS raíz](../AGENTS.md#gates-por-dominio) incluye `npm run build`, pero el job `web` del CI no lo ejecuta (solo lint, typecheck y vitest).
 - **Carga:** el job `sync-load-smoke` corre 50 VUs; la prueba completa de 500 conexiones (SYNC-TEST-01) se corre a mano desde otra máquina ([dominio-reproduccion §14](dominio-reproduccion.md#14-verificación-y-resultados)).
 - **Local:** `make test-all` (Go, Python, web e identity-api) y `make up`/`make down`.
@@ -452,12 +454,14 @@ flowchart LR
 | [0012](adr/0012-trivia-con-reloj-del-servidor-y-ancla-del-recap.md) | Trivia con el reloj del servidor y el ancla del recap |
 | [0013](adr/0013-bloqueo-de-invitados-por-dispositivo.md) | Bloqueo de invitados por dispositivo |
 | [0014](adr/0014-upgrade-y-cierre-4xxx-para-estados-terminales.md) | Upgrade y cierre `4xxx` para estados terminales en el Canal Sync |
+| [0015](adr/0015-app-android-nativa-kotlin.md) | App Android nativa en Kotlin |
 
 ## 11. Documentación por servicio
 
 | Servicio | README | AGENTS |
 | :--- | :--- | :--- |
 | web | [apps/web/README.md](../apps/web/README.md) | [apps/web/AGENTS.md](../apps/web/AGENTS.md) |
+| android | [apps/android/README.md](../apps/android/README.md) | [apps/android/AGENTS.md](../apps/android/AGENTS.md) |
 | identity-api | [services/identity-api/README.md](../services/identity-api/README.md) | [services/identity-api/AGENTS.md](../services/identity-api/AGENTS.md) |
 | sync-core | [services/sync-core/README.md](../services/sync-core/README.md) | [services/sync-core/AGENTS.md](../services/sync-core/AGENTS.md) |
 | social-core | [services/social-core/README.md](../services/social-core/README.md) | [services/social-core/AGENTS.md](../services/social-core/AGENTS.md) |

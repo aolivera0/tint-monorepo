@@ -4,7 +4,7 @@ COVERAGE_MIN := 85
 
 NODE_SERVICES := services/identity-api
 
-.PHONY: up down test-all test-go test-python test-web test-node
+.PHONY: up down test-all test-go test-python test-web test-node test-android
 
 up:
 	docker compose up -d
@@ -37,3 +37,8 @@ test-node:
 		echo "==> $$svc"; \
 		(cd $$svc && npm ci && npm run typecheck && npx vitest run --coverage) || exit 1; \
 	done
+
+# Aparte de test-all: exige JDK 17 y el Android SDK (JAVA_HOME y ANDROID_HOME) y un google-services.json
+# (el real o app/google-services.json.example). Ver apps/android/README.md.
+test-android:
+	cd apps/android && ./gradlew testDebugUnitTest koverVerifyDebug
